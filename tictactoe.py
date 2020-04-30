@@ -1,125 +1,103 @@
-board = [' ' for x in range(10)]
-
-def insertLetter(letter, pos):
-    board[pos] = letter
-
-def spaceIsFree(pos):
-    return board[pos] == ' '
-
-def printBoard(board):
-    print('   |   |')
-    print(' ' + board[1] + ' | ' + board[2] + ' | ' + board[3])
-    print('   |   |')
-    print('-----------')
-    print('   |   |')
-    print(' ' + board[4] + ' | ' + board[5] + ' | ' + board[6])
-    print('   |   |')
-    print('-----------')
-    print('   |   |')
-    print(' ' + board[7] + ' | ' + board[8] + ' | ' + board[9])
-    print('   |   |')
-    
-def isWinner(bo, le):
-    return (bo[7] == le and bo[8] == le and bo[9] == le) or (bo[4] == le and bo[5] == le and bo[6] == le) or(bo[1] == le and bo[2] == le and bo[3] == le) or(bo[1] == le and bo[4] == le and bo[7] == le) or(bo[2] == le and bo[5] == le and bo[8] == le) or(bo[3] == le and bo[6] == le and bo[9] == le) or(bo[1] == le and bo[5] == le and bo[9] == le) or(bo[3] == le and bo[5] == le and bo[7] == le)
-
-def playerMove():
-    run = True
-    while run:
-        move = input('Please select a position to place an \'X\' (1-9): ')
-        try:
-            move = int(move)
-            if move > 0 and move < 10:
-                if spaceIsFree(move):
-                    run = False
-                    insertLetter('X', move)
-                else:
-                    print('Sorry, this space is occupied!')
-            else:
-                print('Please type a number within the range!')
-        except:
-            print('Please type a number!')
-            
-
-def compMove():
-    possibleMoves = [x for x, letter in enumerate(board) if letter == ' ' and x != 0]
-    move = 0
-
-    for let in ['O', 'X']:
-        for i in possibleMoves:
-            boardCopy = board[:]
-            boardCopy[i] = let
-            if isWinner(boardCopy, let):
-                move = i
-                return move
-
-    cornersOpen = []
-    for i in possibleMoves:
-        if i in [1,3,7,9]:
-            cornersOpen.append(i)
-            
-    if len(cornersOpen) > 0:
-        move = selectRandom(cornersOpen)
-        return move
-
-    if 5 in possibleMoves:
-        move = 5
-        return move
-
-    edgesOpen = []
-    for i in possibleMoves:
-        if i in [2,4,6,8]:
-            edgesOpen.append(i)
-            
-    if len(edgesOpen) > 0:
-        move = selectRandom(edgesOpen)
+import sys
+import random
+board=[i for i in range(0,9)]
+player, computer = '',''
+moves=((1,7,3,9),(5,),(2,4,6,8))
+winners=((0,1,2),(3,4,5),(6,7,8),(0,3,6),(1,4,7),(2,5,8),(0,4,8),(2,4,6))
+tab=range(1,10)
+def print_board():
+    x=1
+    for i in board:
+        end = ' | '
+        if x%3 == 0:
+            end = ' \n'
+            if i != 1: end+='______________\n';
+        char=' '
+        if i in ('X','O'): char=i;
+        x+=1
+        print(char,end=end)
         
-    return move
+def select_char():
+    chars=('X','O')
+    if random.randint(0,1) == 0:
+        return chars[::-1]
+    return chars
 
-def selectRandom(li):
-    import random
-    ln = len(li)
-    r = random.randrange(0,ln)
-    return li[r]
-    
-
-def isBoardFull(board):
-    if board.count(' ') > 1:
-        return False
-    else:
+def can_move(brd, player, move):
+    if move in tab and brd[move-1] == move-1:
         return True
+    return False
 
-def main():
-    print('Welcome to Tic Tac Toe!')
-    printBoard(board)
-
-    while not(isBoardFull(board)):
-        if not(isWinner(board, 'O')):
-            playerMove()
-            printBoard(board)
-        else:
-            print('Sorry, O\'s won this time!')
+def can_win(brd, player, move):
+    places=[]
+    x=0
+    for i in brd:
+        if i == player: places.append(x);
+        x+=1
+    win=True
+    for tup in winners:
+        win=True
+        for ix in tup:
+            if brd[ix] != player:
+                win=False
+                break
+        if win == True:
             break
+    return win
 
-        if not(isWinner(board, 'X')):
-            move = compMove()
-            if move == 0:
-                print('Tie Game!')
-            else:
-                insertLetter('O', move)
-                print('Computer placed an \'O\' in position', move , ':')
-                printBoard(board)
-        else:
-            print('X\'s won this time! Good Job!')
+def make_move(brd, player, move, undo=False):
+    if can_move(brd, player, move):
+        brd[move-1] = player
+        win=can_win(brd, player, move)
+        if undo:
+            brd[move-1] = move-1
+        return (True, win)
+    return (False, False)
+
+
+def computer_move():
+    move=-1    
+    for i in range(1,10):
+        if make_move(board, computer, i, True)[1]:
+            move=i
             break
+    if move == -1:        
+        for i in range(1,10):
+            if make_move(board, player, i, True)[1]:
+                move=i
+                break
+    if move == -1:        
+        for tup in moves:
+            for mv in tup:
+                if move == -1 and can_move(board, computer, mv):
+                    move=mv
+                    break
+    return make_move(board, computer, move)
 
-    if isBoardFull(board):
-        print('Tie Game!')
+def space_exist():
+    return board.count('X') + board.count('O') != 9
 
-while True:
-    answer = input('Do you want to play again? (Y/N)')
-    if answer.lower() == 'y' or answer.lower == 'yes':
-        board = [' ' for x in range(10)]
-        print('-----------------------------------')
-        main()
-    else:
+player, computer = select_char()
+print('Player is [%s] and computer is [%s]' % (player, computer))
+result='%%% Draw!! %%%'
+while space_exist():
+    print_board()
+    print('# Make your move ! [1-9] : ', end='')
+    move = int(input())
+    moved, won = make_move(board, player, move)
+    if not moved:
+        print(' >> Invalid number ! Try again !')
+        continue
+   
+    if won:
+        result='*** Congratulations ! You won ! ***'
         break
+    elif computer_move()[1]:
+        result='=== You lose ! =='
+        break;
+
+print_board()
+print(result)
+
+
+
